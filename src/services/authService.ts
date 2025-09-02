@@ -219,8 +219,8 @@ class AuthService {
         used: false
       });
 
-      // Generate reset URL
-      const resetUrl = `${window.location.origin}/reset-password?token=${resetToken}`;
+      // Generate reset URL with correct domain
+      const resetUrl = `https://social.samaraie.com/reset-password?token=${resetToken}`;
 
       // Send email via Supabase Edge Function
       const emailSent = await this.sendPasswordResetEmail({

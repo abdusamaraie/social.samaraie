@@ -6,6 +6,7 @@ const PublicPage = lazy(() => import('../pages/PublicPage'));
 const AdminDashboardPage = lazy(() => import('../pages/AdminDashboard'));
 const LoginPage = lazy(() => import('../pages/LoginPage'));
 const NotFoundPage = lazy(() => import('../pages/NotFoundPage'));
+const ResetPasswordPage = lazy(() => import('../pages/ResetPasswordPage'));
 
 // Protected Route Component
 import { useAuth } from '../hooks/useAuth';
@@ -66,6 +67,14 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: '/reset-password',
+    element: (
+      <PublicRoute>
+        <ResetPasswordPage />
+      </PublicRoute>
+    ),
+  },
+  {
     path: '/dashboard',
     element: (
       <ProtectedRoute>
@@ -83,6 +92,7 @@ export const router = createBrowserRouter([
 export const ROUTES = {
   HOME: '/',
   LOGIN: '/login',
+  RESET_PASSWORD: '/reset-password',
   DASHBOARD: '/dashboard',
   LINKS: '/dashboard/links',
   PROFILE: '/dashboard/profile',
