@@ -1,10 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AuthContext } from '../hooks/useAuth';
-
-interface User {
-  id: string;
-  email: string;
-}
+import { authService, type AuthUser } from '../services/authService';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -13,39 +9,62 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
 
   // Check for existing session on mount
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('auth_token');
-      if (token) {
-        // In a real app, you'd validate the token with your backend
-        setIsAuthenticated(true);
-        setUser({ id: '1', email: 'admin@social.samaraie' });
+    const checkAuth = async () => {
+      try {
+        const currentUser = await authService.getCurrentUser();
+        if (currentUser) {
+          setIsAuthenticated(true);
+          setUser(currentUser);
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     checkAuth();
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simple mock authentication
-    // In production, this would call your authentication API
-    if (email === 'admin@social.samaraie' && password === 'admin123') {
-      setIsAuthenticated(true);
-      setUser({ id: '1', email });
-      localStorage.setItem('auth_token', 'mock_token_' + Date.now());
-      return true;
+    try {
+      const response = await authService.login({ email, password });
+      
+      if (response.success && response.user) {
+        setIsAuthenticated(true);
+        setUser(response.user);
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Login failed:', error);
+      return false;
     }
-    return false;
   };
 
-  const logout = () => {
-    setIsAuthenticated(false);
-    setUser(null);
-    localStorage.removeItem('auth_token');
+  const logout = async () => {
+    try {
+      await authService.logout();
+      setIsAuthenticated(false);
+      setUser(null);
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const requestPasswordReset = async (email: string): Promise<boolean> => {
+    try {
+      const response = await authService.requestPasswordReset(email);
+      return response.success;
+    } catch (error) {
+      console.error('Password reset request failed:', error);
+      return false;
+    }
   };
 
   const value = {
@@ -54,6 +73,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     logout,
     user,
+    requestPasswordReset,
   };
 
   return (
