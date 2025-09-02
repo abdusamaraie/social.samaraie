@@ -1,44 +1,16 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { Card } from '../components/ui/card';
-import { useTheme } from '../contexts/ThemeContext';
-import { getContrastColors, getGlassmorphismStyles, getButtonStyles } from '../utils/contrastUtils';
+import { Alert, AlertDescription } from '../components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
+import { Lock, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
 import { authService } from '../services/authService';
 
-export function ResetPasswordPage() {
+export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { backgroundType } = useTheme();
-  
-  // Add safety checks for theme values
-  const safeBackgroundType = backgroundType || 'gradient1';
-  const colors = getContrastColors(safeBackgroundType);
-  const glassStyles = getGlassmorphismStyles(safeBackgroundType);
-  const primaryButtonStyles = getButtonStyles(safeBackgroundType, 'primary');
-  
-  // Add safety check for button styles
-  const safeButtonStyles = primaryButtonStyles?.default || 'bg-white/20 hover:bg-white/30 border border-white/30 text-white';
-  
-  // Add safety checks for colors
-  const safeColors = {
-    text: colors?.text || 'text-white',
-    textSecondary: colors?.textSecondary || 'text-white/70',
-    textMuted: colors?.textMuted || 'text-white/60'
-  };
-  
-  // Add safety check for glass styles
-  const safeGlassStyles = glassStyles || {
-    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
-  };
-  
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [email, setEmail] = useState('');
@@ -55,13 +27,27 @@ export function ResetPasswordPage() {
       return;
     }
 
-    // Validate token format (basic check)
     if (token.length < 32) {
       setError('Invalid reset token format');
       return;
     }
 
-    setTokenValid(true);
+    // Validate token with auth service
+    const validateToken = async () => {
+      try {
+        const result = await authService.validateResetToken(token);
+        if (result.valid && result.email) {
+          setEmail(result.email);
+          setTokenValid(true);
+        } else {
+          setError(result.error || 'Invalid reset token');
+        }
+      } catch (error) {
+        setError('Token validation failed');
+      }
+    };
+
+    validateToken();
   }, [token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,15 +72,16 @@ export function ResetPasswordPage() {
     setError('');
 
     try {
-      const response = await authService.resetPassword(email, token, newPassword);
+      // Actually reset the password using auth service
+      const result = await authService.resetPassword(email, token, newPassword);
       
-      if (response.success) {
+      if (result.success) {
         setSuccess(true);
         setTimeout(() => {
           navigate('/login');
         }, 3000);
       } else {
-        setError(response.error || 'Failed to reset password');
+        setError(result.error || 'Password reset failed');
       }
     } catch (error) {
       setError('An unexpected error occurred');
@@ -105,19 +92,26 @@ export function ResetPasswordPage() {
 
   if (!tokenValid) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="backdrop-blur-xl p-8 max-w-md w-full text-center">
-          <div className="text-6xl mb-4">❌</div>
-          <h1 className={`text-2xl font-bold ${safeColors.text} mb-4`}>Invalid Reset Link</h1>
-          <p className={`${safeColors.textSecondary} mb-6`}>
-            The password reset link is invalid or has expired.
-          </p>
-          <Button 
-            onClick={() => navigate('/login')}
-            className={`${safeButtonStyles}`}
-          >
-            Return to Login
-          </Button>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <Card className="w-full max-w-md bg-white/10 backdrop-blur-lg border-white/20">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mb-4">
+              <AlertCircle className="w-8 h-8 text-red-400" />
+            </div>
+            <CardTitle className="text-white text-xl">Invalid Reset Link</CardTitle>
+            <CardDescription className="text-white/70">
+              The password reset link is invalid or has expired.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button 
+              onClick={() => navigate('/login')}
+              className="w-full bg-white/20 hover:bg-white/30 border-white/30 text-white"
+              variant="outline"
+            >
+              Return to Login
+            </Button>
+          </CardContent>
         </Card>
       </div>
     );
@@ -125,44 +119,43 @@ export function ResetPasswordPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="backdrop-blur-xl p-8 max-w-md w-full text-center">
-          <div className="text-6xl mb-4">✅</div>
-          <h1 className={`text-2xl font-bold ${safeColors.text} mb-4`}>Password Reset Successfully!</h1>
-          <p className={`${safeColors.textSecondary} mb-6`}>
-            Your password has been updated. You will be redirected to the login page.
-          </p>
-          <div className="text-sm text-green-500">
-            Redirecting to login...
-          </div>
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <Card className="w-full max-w-md bg-white/10 backdrop-blur-lg border-white/20">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="w-8 h-8 text-green-400" />
+            </div>
+            <CardTitle className="text-white text-xl">Password Reset Successfully!</CardTitle>
+            <CardDescription className="text-white/70">
+              Your password has been updated. You will be redirected to the login page.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="text-center text-sm text-green-400">
+              Redirecting to login...
+            </div>
+          </CardContent>
         </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="w-full max-w-md"
-      >
-        <Card 
-          className="backdrop-blur-xl p-8 shadow-2xl"
-          style={safeGlassStyles}
-        >
-          <div className="text-center mb-8">
-            <div className="text-6xl mb-4">🔐</div>
-            <h1 className={`text-2xl font-bold ${safeColors.text} mb-2`}>Reset Your Password</h1>
-            <p className={`${safeColors.textSecondary} text-sm`}>
-              Enter your email and new password to complete the reset
-            </p>
+    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <Card className="w-full max-w-md bg-white/10 backdrop-blur-lg border-white/20">
+        <CardHeader className="text-center">
+          <div className="mx-auto w-16 h-16 bg-blue-500/20 rounded-full flex items-center justify-center mb-4">
+            <Lock className="w-8 h-8 text-blue-400" />
           </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <Label htmlFor="email" className={safeColors.textSecondary}>Email Address</Label>
+          <CardTitle className="text-white text-xl">Reset Your Password</CardTitle>
+          <CardDescription className="text-white/70">
+            Enter your email and new password to complete the reset
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-white/70">Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -170,12 +163,12 @@ export function ResetPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className={`${safeBackgroundType === 'gradient3' ? 'bg-black/10 border-black/20 text-gray-900 placeholder:text-gray-600' : 'bg-white/10 border-white/20 text-white placeholder:text-white/50'}`}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
               />
             </div>
 
-            <div>
-              <Label htmlFor="newPassword" className={safeColors.textSecondary}>New Password</Label>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword" className="text-white/70">New Password</Label>
               <Input
                 id="newPassword"
                 type="password"
@@ -184,12 +177,12 @@ export function ResetPasswordPage() {
                 placeholder="Enter new password"
                 required
                 minLength={8}
-                className={`${safeBackgroundType === 'gradient3' ? 'bg-black/10 border-black/20 text-gray-900 placeholder:text-gray-600' : 'bg-white/10 border-white/20 text-white placeholder:text-white/50'}`}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
               />
             </div>
 
-            <div>
-              <Label htmlFor="confirmPassword" className={safeColors.textSecondary}>Confirm New Password</Label>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="text-white/70">Confirm New Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -198,20 +191,22 @@ export function ResetPasswordPage() {
                 placeholder="Confirm new password"
                 required
                 minLength={8}
-                className={`${safeBackgroundType === 'gradient3' ? 'bg-black/10 border-black/20 text-gray-900 placeholder:text-gray-600' : 'bg-white/10 border-white/20 text-white placeholder:text-white/50'}`}
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/50 focus:border-white/40"
               />
             </div>
 
             {error && (
-              <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3">
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
+              <Alert variant="destructive" className="bg-red-500/20 border-red-500/30">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-red-300">{error}</AlertDescription>
+              </Alert>
             )}
 
             <Button
               type="submit"
               disabled={loading}
-              className={`w-full ${safeButtonStyles} !text-white hover:!text-white`}
+              className="w-full bg-white/20 hover:bg-white/30 border-white/30 text-white disabled:opacity-50"
+              variant="outline"
             >
               {loading ? 'Resetting Password...' : 'Reset Password'}
             </Button>
@@ -219,16 +214,18 @@ export function ResetPasswordPage() {
             <div className="text-center">
               <Button
                 type="button"
-                variant="ghost"
                 onClick={() => navigate('/login')}
-                className={`${safeColors.textSecondary} hover:${safeColors.text} text-sm`}
+                variant="ghost"
+                className="text-white/70 hover:text-white hover:bg-white/10"
+                size="sm"
               >
+                <ArrowLeft className="w-4 h-4 mr-2" />
                 Back to Login
               </Button>
             </div>
           </form>
-        </Card>
-      </motion.div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

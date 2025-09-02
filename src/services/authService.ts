@@ -37,9 +37,11 @@ class AuthService {
 
   // Mock password reset tokens - in production, this would be a real database
   private readonly PASSWORD_RESET_TOKENS = new Map<string, PasswordResetToken>();
+  private readonly RESET_TOKENS_STORAGE_KEY = 'social_link_tree_reset_tokens';
 
   constructor() {
     this.initializeDefaultAdmin();
+    this.loadResetTokens();
   }
 
   private initializeDefaultAdmin() {
@@ -72,6 +74,33 @@ class AuthService {
       passwordHash,
       user: adminUser
     });
+  }
+
+  private loadResetTokens() {
+    try {
+      const storedTokens = localStorage.getItem(this.RESET_TOKENS_STORAGE_KEY);
+      if (storedTokens) {
+        const tokens = JSON.parse(storedTokens);
+        // Clear existing tokens and load from storage
+        this.PASSWORD_RESET_TOKENS.clear();
+        Object.entries(tokens).forEach(([token, tokenData]) => {
+          this.PASSWORD_RESET_TOKENS.set(token, tokenData as PasswordResetToken);
+        });
+        console.log('🔑 Loaded reset tokens from storage:', this.PASSWORD_RESET_TOKENS.size);
+      }
+    } catch (error) {
+      console.error('Failed to load reset tokens from storage:', error);
+    }
+  }
+
+  private saveResetTokens() {
+    try {
+      const tokens = Object.fromEntries(this.PASSWORD_RESET_TOKENS);
+      localStorage.setItem(this.RESET_TOKENS_STORAGE_KEY, JSON.stringify(tokens));
+      console.log('🔑 Saved reset tokens to storage:', this.PASSWORD_RESET_TOKENS.size);
+    } catch (error) {
+      console.error('Failed to save reset tokens to storage:', error);
+    }
   }
 
   private generateSecurePassword(): string {
@@ -266,6 +295,9 @@ class AuthService {
         expiresAt,
         used: false
       });
+      
+      // Save tokens to localStorage
+      this.saveResetTokens();
 
       // Generate reset URL with correct domain based on environment
       const isDevelopment = import.meta.env.DEV || window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
@@ -406,6 +438,9 @@ class AuthService {
       // Mark token as used
       resetTokenData.used = true;
       this.PASSWORD_RESET_TOKENS.set(token, resetTokenData);
+      
+      // Save updated tokens to localStorage
+      this.saveResetTokens();
 
       return {
         success: true
@@ -422,22 +457,33 @@ class AuthService {
   // Utility method to validate reset token (for password reset page)
   async validateResetToken(token: string): Promise<{ valid: boolean; email?: string; error?: string }> {
     try {
+      console.log('🔍 Validating reset token:', token);
+      console.log('🔍 Available tokens:', Array.from(this.PASSWORD_RESET_TOKENS.keys()));
+      console.log('🔍 Total tokens stored:', this.PASSWORD_RESET_TOKENS.size);
+      
       const resetTokenData = this.PASSWORD_RESET_TOKENS.get(token);
       
       if (!resetTokenData) {
+        console.log('❌ Token not found in storage');
         return { valid: false, error: 'Invalid reset token' };
       }
 
+      console.log('✅ Token found:', resetTokenData);
+      
       if (resetTokenData.used) {
+        console.log('❌ Token already used');
         return { valid: false, error: 'Token has already been used' };
       }
 
       if (Date.now() > resetTokenData.expiresAt) {
+        console.log('❌ Token expired. Current time:', Date.now(), 'Expires at:', resetTokenData.expiresAt);
         return { valid: false, error: 'Token has expired' };
       }
 
+      console.log('✅ Token is valid');
       return { valid: true, email: resetTokenData.email };
     } catch (error) {
+      console.error('❌ Token validation error:', error);
       return { valid: false, error: 'Token validation failed' };
     }
   }
