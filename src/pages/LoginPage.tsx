@@ -66,8 +66,8 @@ export default function LoginPage() {
 
     setResetLoading(true);
     try {
-      const success = await requestPasswordReset(resetEmail.trim());
-      if (success) {
+      const response = await requestPasswordReset(resetEmail.trim());
+      if (response.success) {
         setNotification({
           show: true,
           message: 'Password reset instructions sent to your email.',
@@ -76,9 +76,11 @@ export default function LoginPage() {
         setShowPasswordReset(false);
         setResetEmail('');
       } else {
+        // Use the actual error message from the auth service
+        const errorMessage = response.error || 'Email not found in our system. Please use abdu@samaraie.com or contact support.';
         setNotification({
           show: true,
-          message: 'Password reset request failed. Please try again.',
+          message: errorMessage,
           type: 'error'
         });
       }

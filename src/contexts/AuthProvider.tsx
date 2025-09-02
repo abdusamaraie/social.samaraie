@@ -57,13 +57,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const requestPasswordReset = async (email: string): Promise<boolean> => {
+  const requestPasswordReset = async (email: string): Promise<{ success: boolean; error?: string }> => {
     try {
       const response = await authService.requestPasswordReset(email);
-      return response.success;
+      return response;
     } catch (error) {
       console.error('Password reset request failed:', error);
-      return false;
+      return { success: false, error: 'Password reset request failed' };
     }
   };
 

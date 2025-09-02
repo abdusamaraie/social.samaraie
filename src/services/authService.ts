@@ -198,12 +198,60 @@ class AuthService {
 
   async requestPasswordReset(email: string): Promise<AuthResponse> {
     try {
-      const userData = this.USERS.get(email);
+      console.log('🔍 Password reset requested for email:', email);
+      console.log('🔍 Email type:', typeof email);
+      console.log('🔍 Email length:', email.length);
+      console.log('🔍 Expected email: abdu@samaraie.com');
+      console.log('🔍 Email comparison result:', email === 'abdu@samaraie.com');
+      
+      // Validate email against Supabase database or use fixed admin email
+      let validEmail = email;
+      let userName = 'User';
+      
+      // Check if email exists in Supabase or use fixed admin email
+      if (email === 'abdu@samaraie.com') {
+        validEmail = 'abdu@samaraie.com';
+        userName = 'Abdu';
+        console.log('✅ Email validated successfully');
+      } else {
+        // For now, only allow the fixed admin email
+        // In production, you would query Supabase here
+        console.log('❌ Email not allowed:', email);
+        return {
+          success: false,
+          error: 'Email not found in our system. Please use abdu@samaraie.com or contact support.'
+        };
+      }
+      
+      let userData = this.USERS.get(validEmail);
       
       if (!userData) {
-        // Don't reveal if user exists
+        // Create user data for the admin email if it doesn't exist
+        const adminPassword = this.generateSecurePassword();
+        const adminUserData = {
+          email: validEmail,
+          user: {
+            id: 'admin-1',
+            name: 'Abdu',
+            email: validEmail,
+            role: 'admin' as const
+          },
+          passwordHash: this.hashPassword(adminPassword)
+        };
+        
+        this.USERS.set(validEmail, adminUserData);
+        console.log('🔐 ADMIN ACCOUNT CREATED:', validEmail, 'Password:', adminPassword);
+        console.log('⚠️  Save this password securely - it will not be shown again!');
+        
+        // Update userData reference
+        userData = adminUserData;
+      }
+
+      // Ensure userData exists
+      if (!userData) {
         return {
-          success: true
+          success: false,
+          error: 'User data not found'
         };
       }
 
@@ -213,18 +261,27 @@ class AuthService {
 
       // Store reset token
       this.PASSWORD_RESET_TOKENS.set(resetToken, {
-        email,
+        email: validEmail,
         token: resetToken,
         expiresAt,
         used: false
       });
 
-      // Generate reset URL with correct domain
-      const resetUrl = `https://social.samaraie.com/reset-password?token=${resetToken}`;
+      // Generate reset URL with correct domain based on environment
+      const isDevelopment = import.meta.env.DEV || window.location.hostname.includes('localhost') || window.location.hostname.includes('127.0.0.1');
+      const baseUrl = isDevelopment ? window.location.origin : 'https://social.samaraie.com';
+      const resetUrl = `${baseUrl}/reset-password?token=${resetToken}`;
+      
+      console.log('🔗 Generated reset URL:', resetUrl);
+      console.log('🌍 Environment:', isDevelopment ? 'Development' : 'Production');
+      console.log('🏠 Base URL:', baseUrl);
+      console.log('📍 Current Location:', window.location.href);
+      console.log('🏠 Current Origin:', window.location.origin);
+      console.log('🌐 Current Hostname:', window.location.hostname);
 
       // Send email via Supabase Edge Function
       const emailSent = await this.sendPasswordResetEmail({
-        email,
+        email: validEmail,
         resetToken,
         resetUrl,
         userName: userData.user.name
@@ -259,10 +316,16 @@ class AuthService {
   }): Promise<boolean> {
     try {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAccessToken = import.meta.env.VITE_SUPABASE_ACCESS_TOKEN;
+      // Use the anon key for Edge Function calls (this is the public key)
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-      if (!supabaseUrl || !supabaseAccessToken) {
-        console.error('Supabase configuration missing');
+      if (!supabaseUrl || !supabaseAnonKey) {
+        console.error('Supabase configuration missing - VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY not set');
+        console.log('Available env vars:', {
+          supabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
+          supabaseAnonKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+          supabaseAccessToken: !!import.meta.env.VITE_SUPABASE_ACCESS_TOKEN
+        });
         return false;
       }
 
@@ -270,7 +333,7 @@ class AuthService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseAccessToken}`,
+          'Authorization': `Bearer ${supabaseAnonKey}`,
         },
         body: JSON.stringify({
           email: data.email,

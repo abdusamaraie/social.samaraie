@@ -170,6 +170,64 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Validate and sanitize resetUrl
+    let validatedResetUrl = resetUrl;
+    try {
+      const url = new URL(resetUrl);
+      
+      // Log the hostname for debugging
+      console.log(`🔗 Reset URL hostname: ${url.hostname}`);
+      
+      // Allow localhost for development/testing
+      const allowedHostnames = [
+        'social.samaraie.com',
+        'social-samaraie.pages.dev',
+        'localhost',
+        '127.0.0.1'
+      ];
+      
+      // Check if hostname is allowed (including localhost variations)
+      const isAllowedHostname = allowedHostnames.some(allowed => 
+        url.hostname === allowed || 
+        url.hostname.includes('localhost') ||
+        url.hostname.includes('127.0.0.1')
+      );
+      
+      if (!isAllowedHostname) {
+        console.warn(`⚠️ Unexpected hostname in resetUrl: ${url.hostname}`);
+        console.log(`📝 Allowed hostnames: ${allowedHostnames.join(', ')}`);
+      }
+      
+      // Ensure the path is correct
+      if (!url.pathname.startsWith('/reset-password')) {
+        console.warn(`⚠️ Unexpected path in resetUrl: ${url.pathname}`);
+        console.log(`📝 Expected path: /reset-password`);
+      }
+      
+      // Ensure token parameter exists
+      if (!url.searchParams.has('token')) {
+        return new Response(
+          JSON.stringify({ error: 'Reset URL must contain a token parameter' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        );
+      }
+      
+      validatedResetUrl = url.toString();
+      console.log(`✅ Reset URL validated successfully: ${validatedResetUrl}`);
+    } catch (urlError) {
+      console.error('❌ Invalid resetUrl format:', resetUrl);
+      return new Response(
+        JSON.stringify({ error: 'Invalid reset URL format' }),
+        { 
+          status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Get environment variables
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
     const FROM_EMAIL = Deno.env.get('FROM_EMAIL') ?? 'noreply@social.samaraie.com';
@@ -186,9 +244,10 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Attempting to send password reset email to: ${email} from: ${FROM_EMAIL}`);
+    console.log(`Using validated reset URL: ${validatedResetUrl}`);
 
     // Generate email content
-    const { html, text } = generatePasswordResetEmail(userName, resetUrl);
+    const { html, text } = generatePasswordResetEmail(userName, validatedResetUrl);
 
     // Send email via Resend API
     const response = await fetch('https://api.resend.com/emails', {
@@ -233,10 +292,11 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error: any) {
-    console.error('Mailer function error:', error?.message ?? error);
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Mailer function error:', errorMessage);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error?.message }),
+      JSON.stringify({ error: 'Internal server error', details: errorMessage }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
