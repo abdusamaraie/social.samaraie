@@ -13,9 +13,31 @@ export function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { backgroundType } = useTheme();
-  const colors = getContrastColors(backgroundType);
-  const glassStyles = getGlassmorphismStyles(backgroundType);
-  const primaryButtonStyles = getButtonStyles(backgroundType, 'primary');
+  
+  // Add safety checks for theme values
+  const safeBackgroundType = backgroundType || 'gradient1';
+  const colors = getContrastColors(safeBackgroundType);
+  const glassStyles = getGlassmorphismStyles(safeBackgroundType);
+  const primaryButtonStyles = getButtonStyles(safeBackgroundType, 'primary');
+  
+  // Add safety check for button styles
+  const safeButtonStyles = primaryButtonStyles?.default || 'bg-white/20 hover:bg-white/30 border border-white/30 text-white';
+  
+  // Add safety checks for colors
+  const safeColors = {
+    text: colors?.text || 'text-white',
+    textSecondary: colors?.textSecondary || 'text-white/70',
+    textMuted: colors?.textMuted || 'text-white/60'
+  };
+  
+  // Add safety check for glass styles
+  const safeGlassStyles = glassStyles || {
+    background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255, 255, 255, 0.2)',
+    boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.37), inset 0 1px 0 rgba(255, 255, 255, 0.3)',
+  };
   
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -86,13 +108,13 @@ export function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="backdrop-blur-xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">❌</div>
-          <h1 className={`text-2xl font-bold ${colors.text} mb-4`}>Invalid Reset Link</h1>
-          <p className={`${colors.textSecondary} mb-6`}>
+          <h1 className={`text-2xl font-bold ${safeColors.text} mb-4`}>Invalid Reset Link</h1>
+          <p className={`${safeColors.textSecondary} mb-6`}>
             The password reset link is invalid or has expired.
           </p>
           <Button 
             onClick={() => navigate('/login')}
-            className={`${primaryButtonStyles.default} ${primaryButtonStyles.hover} ${primaryButtonStyles.active}`}
+            className={`${safeButtonStyles}`}
           >
             Return to Login
           </Button>
@@ -106,8 +128,8 @@ export function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="backdrop-blur-xl p-8 max-w-md w-full text-center">
           <div className="text-6xl mb-4">✅</div>
-          <h1 className={`text-2xl font-bold ${colors.text} mb-4`}>Password Reset Successfully!</h1>
-          <p className={`${colors.textSecondary} mb-6`}>
+          <h1 className={`text-2xl font-bold ${safeColors.text} mb-4`}>Password Reset Successfully!</h1>
+          <p className={`${safeColors.textSecondary} mb-6`}>
             Your password has been updated. You will be redirected to the login page.
           </p>
           <div className="text-sm text-green-500">
@@ -128,19 +150,19 @@ export function ResetPasswordPage() {
       >
         <Card 
           className="backdrop-blur-xl p-8 shadow-2xl"
-          style={glassStyles}
+          style={safeGlassStyles}
         >
           <div className="text-center mb-8">
             <div className="text-6xl mb-4">🔐</div>
-            <h1 className={`text-2xl font-bold ${colors.text} mb-2`}>Reset Your Password</h1>
-            <p className={`${colors.textSecondary} text-sm`}>
+            <h1 className={`text-2xl font-bold ${safeColors.text} mb-2`}>Reset Your Password</h1>
+            <p className={`${safeColors.textSecondary} text-sm`}>
               Enter your email and new password to complete the reset
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <Label htmlFor="email" className={colors.textSecondary}>Email Address</Label>
+              <Label htmlFor="email" className={safeColors.textSecondary}>Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -148,12 +170,12 @@ export function ResetPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="Enter your email"
                 required
-                className={`${backgroundType === 'gradient3' ? 'bg-black/10 border-black/20 text-gray-900 placeholder:text-gray-600' : 'bg-white/10 border-white/20 text-white placeholder:text-white/50'}`}
+                className={`${safeBackgroundType === 'gradient3' ? 'bg-black/10 border-black/20 text-gray-900 placeholder:text-gray-600' : 'bg-white/10 border-white/20 text-white placeholder:text-white/50'}`}
               />
             </div>
 
             <div>
-              <Label htmlFor="newPassword" className={colors.textSecondary}>New Password</Label>
+              <Label htmlFor="newPassword" className={safeColors.textSecondary}>New Password</Label>
               <Input
                 id="newPassword"
                 type="password"
@@ -162,12 +184,12 @@ export function ResetPasswordPage() {
                 placeholder="Enter new password"
                 required
                 minLength={8}
-                className={`${backgroundType === 'gradient3' ? 'bg-black/10 border-black/20 text-gray-900 placeholder:text-gray-600' : 'bg-white/10 border-white/20 text-white placeholder:text-white/50'}`}
+                className={`${safeBackgroundType === 'gradient3' ? 'bg-black/10 border-black/20 text-gray-900 placeholder:text-gray-600' : 'bg-white/10 border-white/20 text-white placeholder:text-white/50'}`}
               />
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword" className={colors.textSecondary}>Confirm New Password</Label>
+              <Label htmlFor="confirmPassword" className={safeColors.textSecondary}>Confirm New Password</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -176,7 +198,7 @@ export function ResetPasswordPage() {
                 placeholder="Confirm new password"
                 required
                 minLength={8}
-                className={`${backgroundType === 'gradient3' ? 'bg-black/10 border-black/20 text-gray-900 placeholder:text-gray-600' : 'bg-white/10 border-white/20 text-white placeholder:text-white/50'}`}
+                className={`${safeBackgroundType === 'gradient3' ? 'bg-black/10 border-black/20 text-gray-900 placeholder:text-gray-600' : 'bg-white/10 border-white/20 text-white placeholder:text-white/50'}`}
               />
             </div>
 
@@ -189,7 +211,7 @@ export function ResetPasswordPage() {
             <Button
               type="submit"
               disabled={loading}
-              className={`w-full ${primaryButtonStyles.default} ${primaryButtonStyles.hover} ${primaryButtonStyles.active} !text-white hover:!text-white`}
+              className={`w-full ${safeButtonStyles} !text-white hover:!text-white`}
             >
               {loading ? 'Resetting Password...' : 'Reset Password'}
             </Button>
@@ -199,7 +221,7 @@ export function ResetPasswordPage() {
                 type="button"
                 variant="ghost"
                 onClick={() => navigate('/login')}
-                className={`${colors.textSecondary} hover:${colors.text} text-sm`}
+                className={`${safeColors.textSecondary} hover:${safeColors.text} text-sm`}
               >
                 Back to Login
               </Button>
