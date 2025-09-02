@@ -1,0 +1,57 @@
+# Cloudflare Pages Configuration for social.samaraie.com
+name = "social-link-tree"
+compatibility_date = "2024-01-01"
+
+[build]
+command = "npm run build"
+cwd = "."
+
+[build.upload]
+format = "service-worker"
+
+[[build.upload.rules]]
+type = "ESModule"
+globs = ["**/*.js"]
+
+# Environment variables for production
+[vars]
+APP_ENV = "production"
+
+# Pages configuration
+[[pages_build_config]]
+# Build command and output directory are handled by the [build] section above
+build_command = "npm run build"
+destination_dir = "build"
+root_dir = "."
+
+# SPA fallback for client-side routing
+[[pages_build_config.redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+# Domain configuration
+[[pages_build_config.domains]]
+domain = "social.samaraie.com"
+
+# Security headers for production
+[[pages_build_config.headers]]
+# Security headers for all routes
+for = "/*"
+[pages_build_config.headers.values]
+X-Frame-Options = "DENY"
+X-Content-Type-Options = "nosniff"
+Referrer-Policy = "strict-origin-when-cross-origin"
+Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Cache headers for static assets
+[[pages_build_config.headers]]
+for = "/assets/*"
+[pages_build_config.headers.values]
+Cache-Control = "public, max-age=31536000, immutable"
+
+# Cache headers for HTML files
+[[pages_build_config.headers]]
+for = "/*.html"
+[pages_build_config.headers.values]
+Cache-Control = "public, max-age=0, must-revalidate"
