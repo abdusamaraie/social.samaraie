@@ -1,5 +1,5 @@
 import { useContext, createContext } from 'react';
-import type { AuthUser } from '../services/authService';
+import type { AuthUser } from '../services/supabaseAuthService';
 
 interface AuthContextType {
   isAuthenticated: boolean;

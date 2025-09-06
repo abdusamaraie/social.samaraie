@@ -22,7 +22,12 @@ A modern, beautifully designed social media link aggregation platform featuring 
 - Supabase account
 - Resend account (for email functionality)
 
-### Installation
+### Production Setup
+For production deployment, follow the comprehensive guide in [PRODUCTION_SETUP.md](Docs/PRODUCTION_SETUP.md).
+
+### Development Setup
+
+#### Installation
 
 1. **Clone the repository**
    ```bash
@@ -164,11 +169,21 @@ The project includes a mailer Edge Function for password reset emails:
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
+## 📚 Documentation
+
+- [Production Setup Guide](Docs/PRODUCTION_SETUP.md) - Complete production deployment guide
+- [Security Checklist](Docs/SECURITY_CHECKLIST.md) - Security best practices and checklist
+- [Implementation Guide](Docs/Implementation.md) - Detailed development roadmap
+- [UI/UX Documentation](Docs/UI_UX_doc.md) - Design system and component guidelines
+- [Project Structure](Docs/project_structure.md) - Code organization and architecture
+- [Bug Tracking](Docs/Bug_tracking.md) - Known issues and resolutions
+- [PRD](Docs/PRD.md) - Product Requirements Document
+
 ## 🆘 Support
 
 For support and questions:
 - Check the documentation in the `Docs/` folder
-- Review `MANUAL_DEPLOYMENT.md` for deployment help
+- Review the production setup guide for deployment help
 - Open an issue on GitHub
 
 ---

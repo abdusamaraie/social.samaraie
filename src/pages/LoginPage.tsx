@@ -77,7 +77,7 @@ export default function LoginPage() {
         setResetEmail('');
       } else {
         // Use the actual error message from the auth service
-        const errorMessage = response.error || 'Email not found in our system. Please use abdu@samaraie.com or contact support.';
+        const errorMessage = response.error || 'Email not found in our system. Please contact support.';
         setNotification({
           show: true,
           message: errorMessage,
@@ -96,7 +96,7 @@ export default function LoginPage() {
   };
 
   return (
-    <ThemeProvider backgroundType="gradient1">
+    <ThemeProvider>
       <div className="min-h-screen relative overflow-hidden">
         <AnimatedBackground type="gradient1" />
 

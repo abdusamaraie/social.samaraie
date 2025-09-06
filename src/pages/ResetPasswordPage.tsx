@@ -6,7 +6,7 @@ import { Label } from '../components/ui/label';
 import { Alert, AlertDescription } from '../components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Lock, AlertCircle, CheckCircle, ArrowLeft } from 'lucide-react';
-import { authService } from '../services/authService';
+import { supabaseAuthService } from '../services/supabaseAuthService';
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -35,7 +35,7 @@ export default function ResetPasswordPage() {
     // Validate token with auth service
     const validateToken = async () => {
       try {
-        const result = await authService.validateResetToken(token);
+        const result = await supabaseAuthService.validateResetToken(token);
         if (result.valid && result.email) {
           setEmail(result.email);
           setTokenValid(true);
@@ -73,7 +73,7 @@ export default function ResetPasswordPage() {
 
     try {
       // Actually reset the password using auth service
-      const result = await authService.resetPassword(email, token, newPassword);
+      const result = await supabaseAuthService.resetPassword(email, token, newPassword);
       
       if (result.success) {
         setSuccess(true);

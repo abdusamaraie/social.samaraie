@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AuthContext } from '../hooks/useAuth';
-import { authService, type AuthUser } from '../services/authService';
+import { supabaseAuthService, type AuthUser } from '../services/supabaseAuthService';
 
 interface AuthProviderProps {
   children: React.ReactNode;
@@ -15,7 +15,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await authService.getCurrentUser();
+        const currentUser = await supabaseAuthService.getCurrentUser();
         if (currentUser) {
           setIsAuthenticated(true);
           setUser(currentUser);
@@ -32,7 +32,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const response = await authService.login({ email, password });
+      const response = await supabaseAuthService.login({ email, password });
       
       if (response.success && response.user) {
         setIsAuthenticated(true);
@@ -49,7 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await authService.logout();
+      await supabaseAuthService.logout();
       setIsAuthenticated(false);
       setUser(null);
     } catch (error) {
@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const requestPasswordReset = async (email: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      const response = await authService.requestPasswordReset(email);
+      const response = await supabaseAuthService.requestPasswordReset(email);
       return response;
     } catch (error) {
       console.error('Password reset request failed:', error);
