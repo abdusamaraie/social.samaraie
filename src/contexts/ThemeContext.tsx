@@ -1,6 +1,6 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { BackgroundType } from '../utils/contrastUtils';
-import { dataService } from '../services/dataService';
+import { themeService } from '../services/themeService';
 
 export interface ThemeSettings {
   backgroundType: BackgroundType;
@@ -50,13 +50,13 @@ export function ThemeProvider({ children, initialBackgroundType = 'gradient1' }:
     const loadTheme = async () => {
       try {
         setIsLoading(true);
-        const savedTheme = await dataService.getTheme();
+        const savedTheme = await themeService.getTheme();
         if (savedTheme) {
           setTheme({ ...defaultTheme, ...savedTheme });
         }
       } catch (error) {
-        console.warn('Failed to load theme from server, using default:', error);
-        // Fallback to localStorage if server fails
+        console.warn('Failed to load theme from database, using default:', error);
+        // Fallback to localStorage if database fails
         const localTheme = localStorage.getItem('social-link-theme');
         if (localTheme) {
           try {
@@ -80,11 +80,15 @@ export function ThemeProvider({ children, initialBackgroundType = 'gradient1' }:
 
     const saveTheme = async () => {
       try {
-        await dataService.updateTheme(theme);
-        // Also save to localStorage as backup
-        localStorage.setItem('social-link-theme', JSON.stringify(theme));
+        const success = await themeService.updateTheme(theme);
+        if (success) {
+          // Also save to localStorage as backup
+          localStorage.setItem('social-link-theme', JSON.stringify(theme));
+        } else {
+          throw new Error('Failed to save theme to database');
+        }
       } catch (error) {
-        console.warn('Failed to save theme to server:', error);
+        console.warn('Failed to save theme to database:', error);
         // Fallback to localStorage only
         localStorage.setItem('social-link-theme', JSON.stringify(theme));
       }

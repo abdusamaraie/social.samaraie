@@ -29,7 +29,7 @@ const supabase = createClient(
 );
 
 // Health check endpoint
-app.get('/health', (c) => {
+app.get('/make-server-af6f5999/health', (c) => {
   console.log('Health check requested');
   return c.json({ 
     status: 'ok', 
@@ -42,7 +42,7 @@ app.get('/health', (c) => {
 });
 
 // Get profile data
-app.get('/profile', async (c) => {
+app.get('/make-server-af6f5999/profile', async (c) => {
   try {
     console.log('Getting profile data...');
     const profile = await kv.get('linktree-profile');
@@ -65,7 +65,7 @@ app.get('/profile', async (c) => {
 });
 
 // Update profile data
-app.put('/profile', async (c) => {
+app.put('/make-server-af6f5999/profile', async (c) => {
   try {
     console.log('Updating profile data...');
     const profileData = await c.req.json();
@@ -81,7 +81,7 @@ app.put('/profile', async (c) => {
 });
 
 // Get all social links
-app.get('/links', async (c) => {
+app.get('/make-server-af6f5999/links', async (c) => {
   try {
     console.log('Getting social links...');
     const links = await kv.get('linktree-links');
@@ -144,7 +144,7 @@ app.get('/links', async (c) => {
 });
 
 // Add new link
-app.post('/links', async (c) => {
+app.post('/make-server-af6f5999/links', async (c) => {
   try {
     console.log('Adding new link...');
     const newLink = await c.req.json();
@@ -164,7 +164,7 @@ app.post('/links', async (c) => {
 });
 
 // Update existing link
-app.put('/links/:id', async (c) => {
+app.put('/make-server-af6f5999/links/:id', async (c) => {
   try {
     const id = c.req.param('id');
     console.log('Updating link with ID:', id);
@@ -187,7 +187,7 @@ app.put('/links/:id', async (c) => {
 });
 
 // Delete link
-app.delete('/links/:id', async (c) => {
+app.delete('/make-server-af6f5999/links/:id', async (c) => {
   try {
     const id = c.req.param('id');
     console.log('Deleting link with ID:', id);
@@ -205,9 +205,10 @@ app.delete('/links/:id', async (c) => {
 });
 
 // Get theme settings
-app.get('/theme', async (c) => {
+app.get('/make-server-af6f5999/theme', async (c) => {
   try {
     console.log('Getting theme settings...');
+    
     const theme = await kv.get('linktree-theme');
     console.log('Theme settings retrieved:', theme);
     
@@ -231,14 +232,16 @@ app.get('/theme', async (c) => {
     return c.json(theme);
   } catch (error) {
     console.error('Error getting theme:', error);
+    console.error('Error stack:', error.stack);
     return c.json({ error: `Failed to get theme: ${error.message}` }, 500);
   }
 });
 
 // Update theme settings
-app.put('/theme', async (c) => {
+app.put('/make-server-af6f5999/theme', async (c) => {
   try {
     console.log('Updating theme settings...');
+    
     const themeData = await c.req.json();
     console.log('Theme data to update:', themeData);
     
@@ -247,6 +250,7 @@ app.put('/theme', async (c) => {
     return c.json({ success: true });
   } catch (error) {
     console.error('Error updating theme:', error);
+    console.error('Error stack:', error.stack);
     return c.json({ error: `Failed to update theme: ${error.message}` }, 500);
   }
 });

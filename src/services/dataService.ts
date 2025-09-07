@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 // Define types locally to avoid circular imports
@@ -17,97 +18,227 @@ export interface ProfileData {
   avatar: string;
 }
 
-const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-af6f5999`;
+// Supabase configuration
+const supabaseUrl = `https://${projectId}.supabase.co`;
+const supabase = createClient(supabaseUrl, publicAnonKey);
 
 console.log('DataService initialized with:');
 console.log('- Project ID:', projectId);
-console.log('- API Base:', API_BASE);
+console.log('- Supabase URL:', supabaseUrl);
 console.log('- Public Key:', publicAnonKey ? 'Present' : 'Missing');
 
 class DataService {
-  private async request(endpoint: string, options: RequestInit = {}) {
-    const url = `${API_BASE}${endpoint}`;
-    console.log(`Making request to: ${url}`);
-    
+  private readonly TABLE_NAME = 'kv_store_af6f5999';
+
+  // Health check method for debugging
+  async healthCheck() {
     try {
-      const response = await fetch(url, {
-        ...options,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${publicAnonKey}`,
-          ...options.headers,
-        },
-      });
-
-      console.log(`Response status: ${response.status}`);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`API Error (${response.status}):`, errorText);
-        throw new Error(`API Error (${response.status}): ${errorText}`);
+      // Simple health check by trying to read from the database
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select('key')
+        .limit(1);
+      
+      if (error) {
+        throw new Error(`Database health check failed: ${error.message}`);
       }
-
-      const data = await response.json();
-      console.log('Response data:', data);
-      return data;
+      
+      return { 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        database: 'connected'
+      };
     } catch (error) {
-      console.error(`Network error for ${url}:`, error);
+      console.error('Health check failed:', error);
       throw error;
     }
   }
 
-  // Health check method for debugging
-  async healthCheck() {
-    return this.request('/health');
-  }
-
   // Profile methods
   async getProfile(): Promise<ProfileData> {
-    return this.request('/profile');
+    try {
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select('value')
+        .eq('key', 'linktree-profile')
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No profile found, return default
+          return {
+            name: 'Your Name',
+            bio: 'Your bio here',
+            avatar: ''
+          };
+        }
+        throw new Error(`Failed to get profile: ${error.message}`);
+      }
+
+      return data?.value || {
+        name: 'Your Name',
+        bio: 'Your bio here',
+        avatar: ''
+      };
+    } catch (error) {
+      console.error('Error getting profile:', error);
+      throw error;
+    }
   }
 
   async updateProfile(profile: ProfileData): Promise<void> {
-    await this.request('/profile', {
-      method: 'PUT',
-      body: JSON.stringify(profile),
-    });
+    try {
+      const { error } = await supabase
+        .from(this.TABLE_NAME)
+        .upsert({
+          key: 'linktree-profile',
+          value: profile
+        });
+
+      if (error) {
+        throw new Error(`Failed to update profile: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw error;
+    }
   }
 
   // Links methods
   async getLinks(): Promise<SocialLink[]> {
-    return this.request('/links');
+    try {
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select('value')
+        .eq('key', 'linktree-links')
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No links found, return empty array
+          return [];
+        }
+        throw new Error(`Failed to get links: ${error.message}`);
+      }
+
+      return data?.value || [];
+    } catch (error) {
+      console.error('Error getting links:', error);
+      throw error;
+    }
   }
 
   async addLink(link: Omit<SocialLink, 'id'>): Promise<SocialLink> {
-    return this.request('/links', {
-      method: 'POST',
-      body: JSON.stringify(link),
-    });
+    try {
+      const newLink: SocialLink = {
+        ...link,
+        id: crypto.randomUUID()
+      };
+
+      const existingLinks = await this.getLinks();
+      const updatedLinks = [...existingLinks, newLink];
+
+      const { error } = await supabase
+        .from(this.TABLE_NAME)
+        .upsert({
+          key: 'linktree-links',
+          value: updatedLinks
+        });
+
+      if (error) {
+        throw new Error(`Failed to add link: ${error.message}`);
+      }
+
+      return newLink;
+    } catch (error) {
+      console.error('Error adding link:', error);
+      throw error;
+    }
   }
 
   async updateLink(id: string, link: Omit<SocialLink, 'id'>): Promise<void> {
-    await this.request(`/links/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(link),
-    });
+    try {
+      const existingLinks = await this.getLinks();
+      const updatedLinks = existingLinks.map(l => 
+        l.id === id ? { ...link, id } : l
+      );
+
+      const { error } = await supabase
+        .from(this.TABLE_NAME)
+        .upsert({
+          key: 'linktree-links',
+          value: updatedLinks
+        });
+
+      if (error) {
+        throw new Error(`Failed to update link: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating link:', error);
+      throw error;
+    }
   }
 
   async deleteLink(id: string): Promise<void> {
-    await this.request(`/links/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      const existingLinks = await this.getLinks();
+      const updatedLinks = existingLinks.filter(l => l.id !== id);
+
+      const { error } = await supabase
+        .from(this.TABLE_NAME)
+        .upsert({
+          key: 'linktree-links',
+          value: updatedLinks
+        });
+
+      if (error) {
+        throw new Error(`Failed to delete link: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error deleting link:', error);
+      throw error;
+    }
   }
 
-  // Theme methods
+  // Theme methods (these are now handled by themeService, but keeping for compatibility)
   async getTheme(): Promise<any> {
-    return this.request('/theme');
+    try {
+      const { data, error } = await supabase
+        .from(this.TABLE_NAME)
+        .select('value')
+        .eq('key', 'linktree-theme')
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw new Error(`Failed to get theme: ${error.message}`);
+      }
+
+      return data?.value || null;
+    } catch (error) {
+      console.error('Error getting theme:', error);
+      throw error;
+    }
   }
 
   async updateTheme(theme: any): Promise<void> {
-    await this.request('/theme', {
-      method: 'PUT',
-      body: JSON.stringify(theme),
-    });
+    try {
+      const { error } = await supabase
+        .from(this.TABLE_NAME)
+        .upsert({
+          key: 'linktree-theme',
+          value: theme
+        });
+
+      if (error) {
+        throw new Error(`Failed to update theme: ${error.message}`);
+      }
+    } catch (error) {
+      console.error('Error updating theme:', error);
+      throw error;
+    }
   }
 }
 
