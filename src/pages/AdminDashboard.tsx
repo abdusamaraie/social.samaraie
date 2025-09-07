@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { BackgroundControls } from '../components/BackgroundControls';
+import { Header } from '../components/Header';
 import { AnimatedBackground } from '../components/AnimatedBackground';
 import { AdminDashboard as AdminDashboardComponent } from '../components/AdminDashboard';
-import { AdminToggle } from '../components/AdminToggle';
 import { NotificationToast } from '../components/NotificationToast';
-import { ThemeProvider } from '../contexts/ThemeContext';
+import { ThemeProvider, useTheme } from '../contexts/ThemeContext';
 import { dataService } from '../services/dataService';
+
+// Wrapper component to use theme context
+function AnimatedBackgroundWrapper() {
+  const { backgroundType } = useTheme();
+  return <AnimatedBackground type={backgroundType} />;
+}
 
 export interface SocialLink {
   id: string;
@@ -25,8 +30,9 @@ export interface ProfileData {
 }
 
 export default function AdminDashboardPage() {
-  const [backgroundType, setBackgroundType] = useState<'gradient1' | 'gradient2' | 'gradient3' | 'particles' | 'geometric'>('gradient1');
+  // Remove local background state - will use theme context instead
   const [isAdminMode, setIsAdminMode] = useState(true);
+  const [activeTab, setActiveTab] = useState<'links' | 'profile' | 'preview' | 'themes'>('links');
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState<{
     show: boolean;
@@ -174,9 +180,9 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <ThemeProvider initialBackgroundType={backgroundType}>
+      <ThemeProvider>
         <div className="min-h-screen relative overflow-hidden">
-          <AnimatedBackground type={backgroundType} />
+          <AnimatedBackgroundWrapper />
           <div className="relative z-10 min-h-screen flex items-center justify-center">
             <motion.div
               initial={{ opacity: 0 }}
@@ -200,21 +206,15 @@ export default function AdminDashboardPage() {
   }
 
   return (
-    <ThemeProvider initialBackgroundType={backgroundType}>
+    <ThemeProvider>
       <div className="min-h-screen relative overflow-hidden">
-        {/* Animated Background */}
-        <AnimatedBackground type={backgroundType} />
+        {/* Animated Background - managed by theme context */}
+        <AnimatedBackgroundWrapper />
 
-        {/* Background Controls */}
-        <BackgroundControls
-          currentBackground={backgroundType}
-          onBackgroundChange={setBackgroundType}
-        />
-
-        {/* Admin Toggle */}
-        <AdminToggle
-          isAdminMode={isAdminMode}
-          onToggle={() => setIsAdminMode(!isAdminMode)}
+        {/* Header with navigation and theme controls */}
+        <Header 
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
         />
 
         {/* Admin Dashboard */}
@@ -225,6 +225,8 @@ export default function AdminDashboardPage() {
           onUpdateLink={updateLink}
           onDeleteLink={deleteLink}
           onUpdateProfile={updateProfile}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
         />
 
         {/* Notification Toast */}

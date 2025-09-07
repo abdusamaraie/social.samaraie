@@ -5454,3 +5454,10 @@ html {
     opacity: 0;
   }
 }
+
+/* Custom responsive utility for mobile menu */
+@media (min-width: 1024px) {
+  .hide-on-desktop {
+    display: none !important;
+  }
+}

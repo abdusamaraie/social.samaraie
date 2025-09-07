@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { SocialLink } from '../pages/AdminDashboard';
 import { Button } from './ui/button';
+import { GlassmorphismButton } from './ui/glassmorphism-button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Card } from './ui/card';
@@ -15,6 +16,8 @@ interface LinkManagerProps {
   onAddLink: (link: Omit<SocialLink, 'id'>) => void;
   onUpdateLink: (id: string, link: Omit<SocialLink, 'id'>) => void;
   onDeleteLink: (id: string) => void;
+  isAdding?: boolean;
+  onAddingChange?: (isAdding: boolean) => void;
 }
 
 interface LinkForm {
@@ -39,14 +42,16 @@ const colorOptions = [
   { value: 'from-gray-600 to-gray-800', label: 'Gray', preview: 'bg-gradient-to-r from-gray-600 to-gray-800' },
 ];
 
-export function LinkManager({ socialLinks, onAddLink, onUpdateLink, onDeleteLink }: LinkManagerProps) {
+export function LinkManager({ socialLinks, onAddLink, onUpdateLink, onDeleteLink, isAdding: externalIsAdding, onAddingChange }: LinkManagerProps) {
   const { backgroundType } = useTheme();
   const colors = getContrastColors(backgroundType);
   const glassStyles = getGlassmorphismStyles(backgroundType);
   const primaryButtonStyles = getButtonStyles(backgroundType, 'primary');
   const outlineButtonStyles = getButtonStyles(backgroundType, 'outline');
   
-  const [isAdding, setIsAdding] = useState(false);
+  const [internalIsAdding, setInternalIsAdding] = useState(false);
+  const isAdding = externalIsAdding !== undefined ? externalIsAdding : internalIsAdding;
+  const setIsAdding = onAddingChange || setInternalIsAdding;
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState<LinkForm>({
     title: '',
@@ -242,26 +247,6 @@ export function LinkManager({ socialLinks, onAddLink, onUpdateLink, onDeleteLink
         </motion.div>
       )}
 
-      {/* Add Button */}
-      {!isAdding && (
-        <motion.button
-          onClick={() => setIsAdding(true)}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="w-full backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6 shadow-xl border-dashed border-white/30 hover:bg-white/15 transition-all duration-200"
-          style={{
-            background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02))',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-          }}
-        >
-          <div className="text-center">
-            <div className="text-3xl mb-2">➕</div>
-            <div className={`${colors.text} font-medium`}>Add New Link</div>
-            <div className={`${colors.textMuted} text-sm`}>Create a new social media link</div>
-          </div>
-        </motion.button>
-      )}
 
       {/* Links List */}
       <div className="space-y-4">
@@ -276,24 +261,24 @@ export function LinkManager({ socialLinks, onAddLink, onUpdateLink, onDeleteLink
               WebkitBackdropFilter: 'blur(20px)',
             }}
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              <div className="flex items-center space-x-4 min-w-0 flex-1">
                 <div
-                  className={`w-12 h-12 rounded-xl bg-gradient-to-r ${link.color} flex items-center justify-center shadow-lg`}
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-r ${link.color} flex items-center justify-center shadow-lg flex-shrink-0`}
                 >
                   <span className="text-xl">{link.icon}</span>
                 </div>
-                <div>
-                  <h4 className={`${colors.text} font-medium`}>{link.title}</h4>
-                  <p className={`${colors.textMuted} text-sm truncate max-w-[200px]`}>{link.url}</p>
+                <div className="min-w-0 flex-1">
+                  <h4 className={`${colors.text} font-medium truncate`}>{link.title}</h4>
+                  <p className={`${colors.textMuted} text-sm truncate`}>{link.url}</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                 <Button
                   onClick={() => startEdit(link)}
                   size="sm"
                   variant="outline"
-                  className={`${outlineButtonStyles.default} ${outlineButtonStyles.hover} ${outlineButtonStyles.active} !text-white hover:!text-white`}
+                  className={`${outlineButtonStyles.default} ${outlineButtonStyles.hover} ${outlineButtonStyles.active} !text-white hover:!text-white min-w-[60px]`}
                 >
                   Edit
                 </Button>
@@ -301,7 +286,7 @@ export function LinkManager({ socialLinks, onAddLink, onUpdateLink, onDeleteLink
                   onClick={() => onDeleteLink(link.id)}
                   size="sm"
                   variant="outline"
-                  className={`${backgroundType === 'gradient3' ? 'border-red-600/50 text-red-700 hover:bg-red-500/20 hover:text-red-800' : 'border-red-400/50 text-red-300 hover:bg-red-500/20 hover:text-white'} !important`}
+                  className={`${backgroundType === 'gradient3' ? 'border-red-600/50 text-red-700 hover:bg-red-500/20 hover:text-red-800' : 'border-red-400/50 text-red-300 hover:bg-red-500/20 hover:text-white'} !important min-w-[70px]`}
                 >
                   Delete
                 </Button>

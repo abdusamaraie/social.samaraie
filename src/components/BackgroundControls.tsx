@@ -2,17 +2,21 @@ import { motion } from 'motion/react';
 import { useState } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 import { getContrastColors, getGlassmorphismStyles } from '../utils/contrastUtils';
+import { BackgroundType } from '../utils/contrastUtils';
 
 interface BackgroundControlsProps {
-  currentBackground: string;
-  onBackgroundChange: (bg: 'gradient1' | 'gradient2' | 'gradient3' | 'particles' | 'geometric') => void;
+  currentBackground?: string; // Made optional since we'll use theme context
+  onBackgroundChange?: (bg: BackgroundType) => void; // Made optional for backward compatibility
 }
 
 export function BackgroundControls({ currentBackground, onBackgroundChange }: BackgroundControlsProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const { backgroundType } = useTheme();
+  const { theme, updateTheme, backgroundType } = useTheme();
   const colors = getContrastColors(backgroundType);
   const glassStyles = getGlassmorphismStyles(backgroundType);
+  
+  // Use theme context background type as the source of truth
+  const activeBackground = currentBackground || backgroundType;
 
   const backgrounds = [
     { id: 'gradient1', name: 'Aurora', emoji: '🌅' },
@@ -23,13 +27,55 @@ export function BackgroundControls({ currentBackground, onBackgroundChange }: Ba
   ] as const;
 
   return (
-    <div className="fixed top-6 right-6 z-50">
+    <div 
+      className="fixed top-6 right-6 z-50"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'end',
+        alignItems: 'end'
+      }}
+    >
+      {/* Full Screen Frosty Blur Overlay */}
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-40"
+          onClick={() => setIsOpen(false)}
+          style={{ 
+            zIndex: 40,
+            background: `
+              linear-gradient(135deg, 
+                rgba(255, 255, 255, 0.1) 0%, 
+                rgba(255, 255, 255, 0.05) 50%, 
+                rgba(255, 255, 255, 0.1) 100%
+              ),
+              url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.15'/%3E%3C/svg%3E")
+            `,
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+          }}
+        >
+          {/* Additional grain overlay for extra frosty effect */}
+          <div 
+            className="absolute inset-0 opacity-30 pointer-events-none"
+            style={{
+              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.2'/%3E%3C/svg%3E")`,
+              mixBlendMode: 'overlay',
+            }}
+          />
+        </motion.div>
+      )}
+
       {/* Toggle Button */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        className="backdrop-blur-xl rounded-2xl p-3 shadow-xl"
+        className="backdrop-blur-xl rounded-2xl p-3 shadow-xl relative z-50"
         style={glassStyles}
       >
         <motion.div
@@ -43,7 +89,7 @@ export function BackgroundControls({ currentBackground, onBackgroundChange }: Ba
         </motion.div>
       </motion.button>
 
-      {/* Background Options */}
+      {/* Background Options - Simple Dropdown (All Devices) */}
       <motion.div
         initial={{ opacity: 0, y: -10, scale: 0.9 }}
         animate={{ 
@@ -53,33 +99,38 @@ export function BackgroundControls({ currentBackground, onBackgroundChange }: Ba
           pointerEvents: isOpen ? 'auto' : 'none'
         }}
         transition={{ duration: 0.3, type: "spring", stiffness: 300, damping: 30 }}
-        className="absolute top-16 right-0 space-y-2"
+        className="absolute top-16 right-0 space-y-2 relative z-50"
+        style={{ zIndex: 50 }}
       >
         {backgrounds.map((bg, index) => (
           <motion.button
             key={bg.id}
             onClick={() => {
-              onBackgroundChange(bg.id);
+              // Update theme context
+              updateTheme({ backgroundType: bg.id as BackgroundType });
+              // Call the optional callback for backward compatibility
+              if (onBackgroundChange) {
+                onBackgroundChange(bg.id as BackgroundType);
+              }
               setIsOpen(false);
             }}
             whileHover={{ scale: 1.05, x: -4 }}
-            whileTap={{ scale: 0.95 }}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: isOpen ? 1 : 0, x: isOpen ? 0 : 20 }}
             transition={{ delay: isOpen ? index * 0.05 : 0, duration: 0.2 }}
             className={`backdrop-blur-xl rounded-xl p-3 shadow-lg flex items-center space-x-3 min-w-[140px] transition-all duration-200 ${
-              currentBackground === bg.id 
+              activeBackground === bg.id 
                 ? 'brightness-110' 
                 : 'hover:brightness-110'
             }`}
             style={{
               ...glassStyles,
-              filter: currentBackground === bg.id ? 'brightness(1.1)' : 'brightness(1)',
+              filter: activeBackground === bg.id ? 'brightness(1.1)' : 'brightness(1)',
             }}
           >
             <span className="text-lg">{bg.emoji}</span>
             <span className="text-white text-sm font-medium">{bg.name}</span>
-            {currentBackground === bg.id && (
+            {activeBackground === bg.id && (
               <motion.div
                 layoutId="selectedBg"
                 className="w-2 h-2 bg-white rounded-full ml-auto"
