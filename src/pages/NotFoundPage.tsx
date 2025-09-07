@@ -5,7 +5,7 @@ import { ThemeProvider } from '../contexts/ThemeContext';
 
 export default function NotFoundPage() {
   return (
-    <ThemeProvider backgroundType="gradient2">
+    <ThemeProvider>
       <div className="min-h-screen relative overflow-hidden">
         <AnimatedBackground type="gradient2" />
 

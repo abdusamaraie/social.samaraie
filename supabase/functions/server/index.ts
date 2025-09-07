@@ -200,6 +200,53 @@ app.delete('/make-server-af6f5999/links/:id', async (c) => {
   }
 });
 
+// Get theme settings
+app.get('/make-server-af6f5999/theme', async (c) => {
+  try {
+    console.log('Getting theme settings...');
+    const theme = await kv.get('linktree-theme');
+    console.log('Theme settings retrieved:', theme);
+    
+    if (!theme) {
+      const defaultTheme = {
+        backgroundType: 'gradient1',
+        primaryColor: '#3b82f6',
+        secondaryColor: '#6b7280',
+        accentColor: '#10b981',
+        customCSS: '',
+        autoSwitchTime: {
+          enabled: false,
+          lightTheme: 'gradient1',
+          darkTheme: 'gradient3',
+          switchTime: '18:00'
+        }
+      };
+      console.log('Using default theme:', defaultTheme);
+      return c.json(defaultTheme);
+    }
+    return c.json(theme);
+  } catch (error) {
+    console.error('Error getting theme:', error);
+    return c.json({ error: `Failed to get theme: ${error.message}` }, 500);
+  }
+});
+
+// Update theme settings
+app.put('/make-server-af6f5999/theme', async (c) => {
+  try {
+    console.log('Updating theme settings...');
+    const themeData = await c.req.json();
+    console.log('Theme data to update:', themeData);
+    
+    await kv.set('linktree-theme', themeData);
+    console.log('Theme updated successfully');
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error updating theme:', error);
+    return c.json({ error: `Failed to update theme: ${error.message}` }, 500);
+  }
+});
+
 console.log('Starting Linktree server...');
 console.log('Environment check:');
 console.log('- SUPABASE_URL:', Deno.env.get('SUPABASE_URL') ? '✓ Set' : '✗ Not set');

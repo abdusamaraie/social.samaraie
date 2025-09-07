@@ -2,7 +2,7 @@ import { motion } from 'motion/react';
 import { useTheme } from '../../contexts/ThemeContext';
 import { getGlassmorphismStyles } from '../../utils/contrastUtils';
 import { FrostyOverlay } from './FrostyOverlay';
-import type { BackgroundType } from '../../contexts/ThemeContext';
+import type { BackgroundType } from '../../utils/contrastUtils';
 
 interface ThemeToggleDropdownProps {
   isOpen: boolean;

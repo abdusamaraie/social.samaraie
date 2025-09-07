@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 import { BackgroundType } from '../utils/contrastUtils';
+import { dataService } from '../services/dataService';
 
 export interface ThemeSettings {
   backgroundType: BackgroundType;
@@ -20,6 +21,7 @@ interface ThemeContextType {
   updateTheme: (updates: Partial<ThemeSettings>) => void;
   resetTheme: () => void;
   backgroundType: BackgroundType; // For backward compatibility
+  isLoading: boolean;
 }
 
 const defaultTheme: ThemeSettings = {
@@ -41,24 +43,57 @@ export function ThemeProvider({ children, initialBackgroundType = 'gradient1' }:
     ...defaultTheme,
     backgroundType: initialBackgroundType,
   });
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Load theme from localStorage on mount
+  // Load theme from Supabase on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem('social-link-theme');
-    if (savedTheme) {
+    const loadTheme = async () => {
       try {
-        const parsedTheme = JSON.parse(savedTheme);
-        setTheme({ ...defaultTheme, ...parsedTheme });
+        setIsLoading(true);
+        const savedTheme = await dataService.getTheme();
+        if (savedTheme) {
+          setTheme({ ...defaultTheme, ...savedTheme });
+        }
       } catch (error) {
-        console.warn('Failed to parse saved theme:', error);
+        console.warn('Failed to load theme from server, using default:', error);
+        // Fallback to localStorage if server fails
+        const localTheme = localStorage.getItem('social-link-theme');
+        if (localTheme) {
+          try {
+            const parsedTheme = JSON.parse(localTheme);
+            setTheme({ ...defaultTheme, ...parsedTheme });
+          } catch (parseError) {
+            console.warn('Failed to parse local theme:', parseError);
+          }
+        }
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+
+    loadTheme();
   }, []);
 
-  // Save theme to localStorage when it changes
+  // Save theme to Supabase when it changes (with debouncing)
   useEffect(() => {
-    localStorage.setItem('social-link-theme', JSON.stringify(theme));
-  }, [theme]);
+    if (isLoading) return; // Don't save during initial load
+
+    const saveTheme = async () => {
+      try {
+        await dataService.updateTheme(theme);
+        // Also save to localStorage as backup
+        localStorage.setItem('social-link-theme', JSON.stringify(theme));
+      } catch (error) {
+        console.warn('Failed to save theme to server:', error);
+        // Fallback to localStorage only
+        localStorage.setItem('social-link-theme', JSON.stringify(theme));
+      }
+    };
+
+    // Debounce the save operation
+    const timeoutId = setTimeout(saveTheme, 500);
+    return () => clearTimeout(timeoutId);
+  }, [theme, isLoading]);
 
   // Auto-switch theme based on time
   useEffect(() => {
@@ -70,8 +105,8 @@ export function ThemeProvider({ children, initialBackgroundType = 'gradient1' }:
       const switchTime = parseInt(theme.autoSwitchTime!.switchTime.replace(':', ''));
 
       const newBackgroundType = currentTime >= switchTime
-        ? theme.autoSwitchTime.darkTheme
-        : theme.autoSwitchTime.lightTheme;
+        ? theme.autoSwitchTime?.darkTheme || 'gradient3'
+        : theme.autoSwitchTime?.lightTheme || 'gradient1';
 
       if (newBackgroundType !== theme.backgroundType) {
         setTheme(prev => ({ ...prev, backgroundType: newBackgroundType }));
@@ -89,6 +124,7 @@ export function ThemeProvider({ children, initialBackgroundType = 'gradient1' }:
 
   const updateTheme = (updates: Partial<ThemeSettings>) => {
     setTheme(prev => ({ ...prev, ...updates }));
+    console.log('Theme updated:', { ...theme, ...updates });
   };
 
   const resetTheme = () => {
@@ -100,6 +136,7 @@ export function ThemeProvider({ children, initialBackgroundType = 'gradient1' }:
     updateTheme,
     resetTheme,
     backgroundType: theme.backgroundType, // For backward compatibility
+    isLoading,
   };
 
   return (

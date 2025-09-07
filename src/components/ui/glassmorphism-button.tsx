@@ -13,6 +13,7 @@ interface GlassmorphismButtonProps {
   asChild?: boolean;
   fullWidth?: boolean;
   responsive?: boolean;
+  style?: React.CSSProperties;
 }
 
 export function GlassmorphismButton({ 
@@ -25,7 +26,8 @@ export function GlassmorphismButton({
   type = 'button',
   asChild = false,
   fullWidth = false,
-  responsive = true
+  responsive = true,
+  style
 }: GlassmorphismButtonProps) {
   const baseClasses = `
     relative overflow-hidden rounded-full
@@ -110,7 +112,7 @@ export function GlassmorphismButton({
         disabled={disabled}
         type={asChild ? undefined : type}
         className={cn(baseClasses, sizeClasses[size], variantClasses[variant], className)}
-        style={buttonStyle}
+        style={{ ...buttonStyle, ...style }}
         whileHover={{ scale: disabled ? 1 : 1.02 }}
         whileTap={{ scale: disabled ? 1 : 0.98 }}
         transition={{

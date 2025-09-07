@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { SocialLink, ProfileData } from '../App';
+import { SocialLink, ProfileData } from '../services/dataService';
 import { LinkCard } from './LinkCard';
 import { ProfileCard } from './ProfileCard';
 import { SectionWrapper } from './SectionWrapper';

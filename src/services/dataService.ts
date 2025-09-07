@@ -1,5 +1,21 @@
 import { projectId, publicAnonKey } from '../utils/supabase/info';
-import { SocialLink, ProfileData } from '../App';
+
+// Define types locally to avoid circular imports
+export interface SocialLink {
+  id: string;
+  title: string;
+  url: string;
+  icon: string;
+  color: string;
+  customColor?: string;
+  customIcon?: string;
+}
+
+export interface ProfileData {
+  name: string;
+  bio: string;
+  avatar: string;
+}
 
 const API_BASE = `https://${projectId}.supabase.co/functions/v1/make-server-af6f5999`;
 
@@ -79,6 +95,18 @@ class DataService {
   async deleteLink(id: string): Promise<void> {
     await this.request(`/links/${id}`, {
       method: 'DELETE',
+    });
+  }
+
+  // Theme methods
+  async getTheme(): Promise<any> {
+    return this.request('/theme');
+  }
+
+  async updateTheme(theme: any): Promise<void> {
+    await this.request('/theme', {
+      method: 'PUT',
+      body: JSON.stringify(theme),
     });
   }
 }

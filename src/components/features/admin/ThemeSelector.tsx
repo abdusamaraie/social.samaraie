@@ -35,7 +35,7 @@ const colorPresets = [
 ];
 
 export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
-  const { theme, updateTheme, resetTheme, backgroundType } = useTheme();
+  const { theme, updateTheme, resetTheme, backgroundType, isLoading } = useTheme();
   const colors = getContrastColors(backgroundType);
   const glassStyles = getGlassmorphismStyles(backgroundType);
 
@@ -44,6 +44,7 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
   const [switchTime, setSwitchTime] = useState(theme.autoSwitchTime?.switchTime || '18:00');
   const [lightTheme, setLightTheme] = useState(theme.autoSwitchTime?.lightTheme || 'gradient1');
   const [darkTheme, setDarkTheme] = useState(theme.autoSwitchTime?.darkTheme || 'gradient3');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   const handleBackgroundChange = (newBackground: BackgroundType) => {
     updateTheme({ backgroundType: newBackground });
@@ -110,6 +111,35 @@ export function ThemeSelector({ className = '' }: ThemeSelectorProps) {
   return (
     <SectionWrapper className={className}>
       <div className="space-y-6">
+        {/* Status Indicator */}
+        {isLoading && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-center p-4 rounded-lg bg-blue-500/10 border border-blue-500/20"
+          >
+            <div className="flex items-center space-x-2">
+              <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className={`${colors.text} text-sm`}>Loading theme settings...</span>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Success Message */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-center p-3 rounded-lg bg-green-500/10 border border-green-500/20"
+        >
+          <div className="flex items-center space-x-2">
+            <div className="w-4 h-4 rounded-full bg-green-500 flex items-center justify-center">
+              <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <span className={`${colors.text} text-sm font-medium`}>Theme settings are automatically saved to the cloud</span>
+          </div>
+        </motion.div>
         {/* Background Selection */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
